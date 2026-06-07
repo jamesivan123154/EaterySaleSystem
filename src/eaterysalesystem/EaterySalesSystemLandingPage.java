@@ -4,11 +4,13 @@
  */
 package eaterysalesystem;
 
+
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 import javax.swing.*;
 import javax.swing.border.*;
+import java.sql.*;
 
 /**
  *
@@ -42,7 +44,7 @@ public class EaterySalesSystemLandingPage extends JFrame {
     };
 
     // ── Menu Data ──
-    private static final String[][] POPULAR_ITEMS = {
+    public static final String[][] POPULAR_ITEMS = {
         {"Adobo",             "78"},
         {"Sinigang",          "95"},
         {"Lumpiang Shanghai", "55"},
@@ -65,7 +67,7 @@ public class EaterySalesSystemLandingPage extends JFrame {
         {"Lumpiang Togue",    "50"}
     };
 
-    private static final String[][] NICHE_ITEMS = {
+    public static final String[][] NICHE_ITEMS = {
         {"Dinuguan",         "80"},
         {"Papaitan",         "85"},
         {"Bopis",            "75"},
@@ -139,10 +141,33 @@ public class EaterySalesSystemLandingPage extends JFrame {
         logo.setForeground(Color.WHITE);
         hdr.add(logo, BorderLayout.WEST);
 
-        JLabel tagline = new JLabel("Lutong Bahay, Presyong Mababa  |  Order Here");
-        tagline.setFont(FONT_BODY);
-        tagline.setForeground(new Color(255, 220, 220));
-        hdr.add(tagline, BorderLayout.EAST);
+        hdr.add(logo, BorderLayout.WEST);
+
+JButton btnLogout = new JButton("Logout");
+btnLogout.setBackground(COLOR_ACCENT);
+btnLogout.setForeground(Color.BLACK);
+btnLogout.setFocusPainted(false);
+
+btnLogout.addActionListener(e -> {
+    dispose(); // closes current frame
+
+    // open login page again
+    new LogInPage().setVisible(true);
+});
+
+JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+rightPanel.setOpaque(false);
+
+JLabel tagline = new JLabel("Lutong Bahay, Presyong Mababa | Order Here");
+tagline.setFont(FONT_BODY);
+tagline.setForeground(new Color(255, 220, 220));
+
+btnLogout.setPreferredSize(new Dimension(110, 32));
+
+rightPanel.add(tagline);
+rightPanel.add(btnLogout);
+
+hdr.add(rightPanel, BorderLayout.EAST);
 
         return hdr;
     }
@@ -159,23 +184,63 @@ public class EaterySalesSystemLandingPage extends JFrame {
     }
 
     private JPanel buildGreeting() {
-        JPanel greet = new JPanel();
-        greet.setBackground(BG_MAIN);
-        greet.setLayout(new BoxLayout(greet, BoxLayout.Y_AXIS));
-        greet.setBorder(new EmptyBorder(14, 20, 6, 10));
+    JPanel greet = new JPanel();
+    greet.setBackground(BG_MAIN);
+    greet.setLayout(new BoxLayout(greet, BoxLayout.Y_AXIS));
+    greet.setBorder(new EmptyBorder(14, 20, 6, 20));
 
-        JLabel hi  = new JLabel("Kumain na,");
-        hi.setFont(new Font("Arial", Font.BOLD, 22));
-        hi.setForeground(COLOR_TEXT);
+    JPanel topRow = new JPanel(new BorderLayout());
+    topRow.setBackground(BG_MAIN);
 
-        JLabel sub = new JLabel("anong gusto mo?");
-        sub.setFont(new Font("Arial", Font.PLAIN, 22));
-        sub.setForeground(COLOR_TEXT);
+    JLabel hi = new JLabel("Kumain na,");
+    hi.setFont(new Font("Arial", Font.BOLD, 22));
+    hi.setForeground(COLOR_TEXT);
 
-        greet.add(hi);
-        greet.add(sub);
-        return greet;
-    }
+    topRow.add(hi, BorderLayout.WEST);
+
+    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+    buttonPanel.setOpaque(false);
+
+    JButton btnEditMenu = new JButton("Edit Menu");
+    JButton btnOrders = new JButton("Order History");
+    JButton btnSales = new JButton("Sales Report");
+
+    btnEditMenu.setBackground(COLOR_ACCENT);
+    btnOrders.setBackground(COLOR_ACCENT);
+    btnSales.setBackground(COLOR_ACCENT);
+
+    btnEditMenu.setFocusPainted(false);
+    btnOrders.setFocusPainted(false);
+    btnSales.setFocusPainted(false);
+
+    btnEditMenu.addActionListener(e -> {
+        new EditMenuFrame(this).setVisible(true);
+    });
+    
+    btnOrders.addActionListener(e -> {
+    new OrderHistoryFrame().setVisible(true);
+    });
+
+    buttonPanel.add(btnEditMenu);
+    buttonPanel.add(btnOrders);
+    buttonPanel.add(btnSales);
+
+    topRow.add(buttonPanel, BorderLayout.EAST);
+
+    JLabel sub = new JLabel("anong gusto mo?");
+    sub.setFont(new Font("Arial", Font.PLAIN, 22));
+    sub.setForeground(COLOR_TEXT);
+
+    greet.add(topRow);
+
+JPanel subPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+subPanel.setBackground(BG_MAIN);
+subPanel.add(sub);
+
+greet.add(subPanel);
+
+    return greet;
+}
 
     private JPanel buildCategoryBar() {
         JPanel wrapper = new JPanel(new BorderLayout());
@@ -448,6 +513,33 @@ public class EaterySalesSystemLandingPage extends JFrame {
         // Display success invoice modal
         String message = String.format("Thank you, %s!\nTotal Paid: P %d.00\n\nOrder has been sent to the kitchen.", customerName, total);
         JOptionPane.showMessageDialog(this, message, "Order Successful", JOptionPane.INFORMATION_MESSAGE);
+        
+        // SAVE TO POSTGRESQL DATABASE
+try {
+    Connection conn = DriverManager.getConnection(
+        "jdbc:postgresql://localhost:5432/eaterydb",
+        "postgres",
+        "admin123"
+    );
+
+    String sql = "INSERT INTO orders(customer_name, total_amount) VALUES (?, ?)";
+
+    PreparedStatement pst = conn.prepareStatement(sql);
+    pst.setString(1, customerName);
+    pst.setDouble(2, total);
+
+    pst.executeUpdate();
+
+    pst.close();
+    conn.close();
+
+} catch (SQLException ex) {
+    JOptionPane.showMessageDialog(this,
+        "Failed to save order:\n" + ex.getMessage(),
+        "Database Error",
+        JOptionPane.ERROR_MESSAGE
+    );
+}
 
         // Flush application data buffers back to empty states
         orderMap.clear();
@@ -535,6 +627,28 @@ public class EaterySalesSystemLandingPage extends JFrame {
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return btn;
     }
+    
+    public void updatePrice(String foodName, int newPrice) {
+
+    priceMap.put(foodName, newPrice);
+
+    for(String[] item : POPULAR_ITEMS){
+        if(item[0].equals(foodName)){
+            item[1] = String.valueOf(newPrice);
+            break;
+        }
+    }
+
+    for(String[] item : NICHE_ITEMS){
+        if(item[0].equals(foodName)){
+            item[1] = String.valueOf(newPrice);
+            break;
+        }
+    }
+
+    refreshItemsGrid();
+    refreshOrderPanel();
+}
 
     // ─────────────────────────────────────────────────────────────
     // FOOD EMOJIS
