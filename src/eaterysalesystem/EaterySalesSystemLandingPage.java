@@ -223,6 +223,11 @@ hdr.add(rightPanel, BorderLayout.EAST);
     btnOrders.addActionListener(e -> {
     new OrderHistoryFrame().setVisible(true);
     });
+	
+	btnSales.addActionListener(e -> {
+    this.setVisible(false); 
+    new SalesReportFrame(this.role, this); 
+	});
 
     buttonPanel.add(btnOrders);
 
