@@ -238,14 +238,19 @@ hdr.add(rightPanel, BorderLayout.EAST);
     JButton btnEditMenu = new JButton("Edit Menu");
     JButton btnOrders = new JButton("Order History");
     JButton btnSales = new JButton("Sales Report");
+	JButton btnStaff = new JButton("Staff Manager");
 
     btnEditMenu.setBackground(COLOR_ACCENT);
     btnOrders.setBackground(COLOR_ACCENT);
     btnSales.setBackground(COLOR_ACCENT);
+	btnStaff.setBackground(COLOR_ACCENT);
 
     btnEditMenu.setFocusPainted(false);
     btnOrders.setFocusPainted(false);
     btnSales.setFocusPainted(false);
+	btnStaff.setFocusPainted(false);
+	
+	
 
     btnEditMenu.addActionListener(e -> {
         new EditMenuFrame(this).setVisible(true);
@@ -259,12 +264,23 @@ hdr.add(rightPanel, BorderLayout.EAST);
     this.setVisible(false); 
     new SalesReportFrame(this.role, this); 
 	});
+	
+	btnStaff.addActionListener(e -> {
+    try {
+        new StaffManagerFrame(this.role, this).setVisible(true);
+        this.setVisible(false); 
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Could not open Staff Manager: " + ex.getMessage());
+    }
+});
 
     buttonPanel.add(btnOrders);
 
 	if (role.equals("Owner")) {
 		buttonPanel.add(btnEditMenu);
 		buttonPanel.add(btnSales);
+		buttonPanel.add(btnStaff);
 	}
 
     topRow.add(buttonPanel, BorderLayout.EAST);
