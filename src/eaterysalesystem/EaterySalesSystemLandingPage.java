@@ -44,51 +44,53 @@ public class EaterySalesSystemLandingPage extends JFrame {
     };
 
     // ── Menu Data ──
-    public static final String[][] POPULAR_ITEMS = {
-        {"Adobo",             "78"},
-        {"Sinigang",          "95"},
-        {"Lumpiang Shanghai", "55"},
-        {"Pork Menudo",       "85"},
-        {"Tortang Talong",    "50"},
-        {"Fried Fish",        "60"},
-        {"Tinolang Manok",    "90"},
-        {"Chopsuey",          "70"},
-        {"Inihaw na Liempo",  "110"},
-        {"Pork Chop",         "95"},
-        {"Lechon Kawali",     "120"},
-        {"Ginataang Kalabasa","65"},
-        {"Daing na Bangus",   "75"},
-        {"Sarsiadong Isda",   "70"},
-        {"Beef Pares",        "105"},
-        {"Chicken Afritada",  "90"},
-        {"Pork Higado",       "85"},
-        {"Ginisang Sayote",   "55"},
-        {"Beef Caldereta",    "115"},
-        {"Lumpiang Togue",    "50"}
-    };
+    public static final ArrayList<String[]> POPULAR_ITEMS =
+        new ArrayList<>(Arrays.asList(
+                new String[]{"Adobo", "78"},
+                new String[]{"Sinigang", "95"},
+                new String[]{"Lumpiang Shanghai", "55"},
+                new String[]{"Pork Menudo", "85"},
+                new String[]{"Tortang Talong", "50"},
+                new String[]{"Fried Fish", "60"},
+                new String[]{"Tinolang Manok", "90"},
+                new String[]{"Chopsuey", "70"},
+                new String[]{"Inihaw na Liempo", "110"},
+                new String[]{"Pork Chop", "95"},
+                new String[]{"Lechon Kawali", "120"},
+                new String[]{"Ginataang Kalabasa", "65"},
+                new String[]{"Daing na Bangus", "75"},
+                new String[]{"Sarsiadong Isda", "70"},
+                new String[]{"Beef Pares", "105"},
+                new String[]{"Chicken Afritada", "90"},
+                new String[]{"Pork Higado", "85"},
+                new String[]{"Ginisang Sayote", "55"},
+                new String[]{"Beef Caldereta", "115"},
+                new String[]{"Lumpiang Togue", "50"}
+        ));
 
-    public static final String[][] NICHE_ITEMS = {
-        {"Dinuguan",         "80"},
-        {"Papaitan",         "85"},
-        {"Bopis",            "75"},
-        {"Pinakbet",         "70"},
-        {"Ginisang Monggo",  "60"},
-        {"Laing",            "75"},
-        {"Kare-Kare",        "130"},
-        {"Kinilaw",          "90"},
-        {"Ginataang Langka", "65"},
-        {"Adobong Pusit",    "95"},
-        {"Ginataang Tulinan","85"},
-        {"Ginataang Suso",   "70"},
-        {"Paksiw na Bangus", "65"},
-        {"Sinanglay",        "80"},
-        {"KBL",              "95"},
-        {"Adobong Atay",     "70"},
-        {"Paksiw na Pata",   "105"},
-        {"Balbacua",         "120"},
-        {"Ginataang Santol", "75"},
-        {"Adobong Kamansi",  "80"}
-    };
+    public static final ArrayList<String[]> NICHE_ITEMS =
+                new ArrayList<>(Arrays.asList(
+                new String[]{"Dinuguan",         "80"},
+                new String[]{"Papaitan",         "85"},
+                new String[]{"Bopis",            "75"},
+                new String[]{"Pinakbet",         "70"},
+                new String[]{"Ginisang Monggo",  "60"},
+                new String[]{"Laing",            "75"},
+                new String[]{"Kare-Kare",        "130"},
+                new String[]{"Kinilaw",          "90"},
+                new String[]{"Ginataang Langka", "65"},
+                new String[]{"Adobong Pusit",    "95"},
+                new String[]{"Ginataang Tulinan","85"},
+                new String[]{"Ginataang Suso",   "70"},
+                new String[]{"Paksiw na Bangus", "65"},
+                new String[]{"Sinanglay",        "80"},
+                new String[]{"KBL",              "95"},
+                new String[]{"Adobong Atay",     "70"},
+                new String[]{"Paksiw na Pata",   "105"},
+                new String[]{"Balbacua",         "120"},
+                new String[]{"Ginataang Santol", "75"},
+                new String[]{"Adobong Kamansi",  "80"}
+        ));
 
     // ── State Management ──
     private int selectedCategory = 0;
@@ -109,9 +111,12 @@ public class EaterySalesSystemLandingPage extends JFrame {
 
     // ── Build price map for quick lookup ──
     private void buildPriceLookup() {
-        for (String[] row : POPULAR_ITEMS) priceMap.put(row[0], Integer.parseInt(row[1]));
-        for (String[] row : NICHE_ITEMS)   priceMap.put(row[0], Integer.parseInt(row[1]));
-    }
+
+    priceMap.clear();
+
+    for (String[] row : POPULAR_ITEMS)priceMap.put(row[0], Integer.parseInt(row[1]));
+    for (String[] row : NICHE_ITEMS)priceMap.put(row[0], Integer.parseInt(row[1]));
+}
 
     // ── Initialize main UI ──
     private void initUI() {
@@ -303,7 +308,7 @@ greet.add(subPanel);
 
     private void refreshItemsGrid() {
         pnlItems.removeAll();
-        String[][] items = (selectedCategory == 0) ? POPULAR_ITEMS : NICHE_ITEMS;
+        ArrayList<String[]> items = (selectedCategory == 0) ? POPULAR_ITEMS : NICHE_ITEMS;
 
         pnlItems.setLayout(new GridLayout(0, 3, 10, 10));
         pnlItems.setBorder(new EmptyBorder(10, 16, 10, 10));
@@ -312,7 +317,7 @@ greet.add(subPanel);
             pnlItems.add(buildItemCard(item[0], item[1]));
         }
 
-        int totalItems = items.length;
+        int totalItems = items.size();
         int columns = 3;
         int rows = (int) Math.ceil((double) totalItems / columns);
         int panelHeight = (rows * 140) + ((rows - 1) * 10) + 24;
@@ -628,26 +633,43 @@ try {
         return btn;
     }
     
-    public void updatePrice(String foodName, int newPrice) {
+    public void updateMenuItem(int rowIndex, String newFoodName, int newPrice) {
 
-    priceMap.put(foodName, newPrice);
+    if(rowIndex < POPULAR_ITEMS.size()){
 
-    for(String[] item : POPULAR_ITEMS){
-        if(item[0].equals(foodName)){
-            item[1] = String.valueOf(newPrice);
-            break;
-        }
+        POPULAR_ITEMS.get(rowIndex)[0] = newFoodName;
+        POPULAR_ITEMS.get(rowIndex)[1] = String.valueOf(newPrice);
+
+    } else {
+
+        int nicheIndex =
+                rowIndex - POPULAR_ITEMS.size();
+
+        NICHE_ITEMS.get(nicheIndex)[0] = newFoodName;
+        NICHE_ITEMS.get(nicheIndex)[1] = String.valueOf(newPrice);
     }
 
-    for(String[] item : NICHE_ITEMS){
-        if(item[0].equals(foodName)){
-            item[1] = String.valueOf(newPrice);
-            break;
-        }
-    }
+    buildPriceLookup();
 
     refreshItemsGrid();
     refreshOrderPanel();
+}
+    
+    public void addMenuItem(String category, String foodName, int price) {
+
+    String[] newItem = {
+        foodName,
+        String.valueOf(price)
+    };
+
+    if(category.equals("Popular")) {
+        POPULAR_ITEMS.add(newItem);
+    } else {
+        NICHE_ITEMS.add(newItem);
+    }
+
+    buildPriceLookup();
+    refreshItemsGrid();
 }
 
     // ─────────────────────────────────────────────────────────────

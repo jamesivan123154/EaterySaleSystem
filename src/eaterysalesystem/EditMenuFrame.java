@@ -27,7 +27,7 @@ public class EditMenuFrame extends JFrame {
 
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 1;
+            return true;
             }
         };
 
@@ -38,11 +38,77 @@ public class EditMenuFrame extends JFrame {
         JScrollPane scrollPane = new JScrollPane(table);
 
         JButton btnSave = new JButton("Save Changes");
+        JButton btnAddFood = new JButton("Add Food");
 
         btnSave.addActionListener(e -> saveChanges());
+        btnAddFood.addActionListener(e -> {
+
+    String foodName = JOptionPane.showInputDialog(
+            this,
+            "Enter Food Name:"
+    );
+
+    if(foodName == null || foodName.trim().isEmpty()) {
+        return;
+    }
+
+    String priceText = JOptionPane.showInputDialog(
+            this,
+            "Enter Price:"
+    );
+
+    if(priceText == null) {
+        return;
+    }
+
+    try {
+
+        int price = Integer.parseInt(priceText);
+
+        String[] categories = {
+            "Popular",
+            "Niche"
+        };
+
+        String category =
+                (String) JOptionPane.showInputDialog(
+                        this,
+                        "Select Category:",
+                        "Food Category",
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        categories,
+                        categories[0]
+                );
+
+        if(category == null) {
+            return;
+        }
+
+        parent.addMenuItem(
+                category,
+                foodName,
+                price
+        );
+
+        reloadTable();
+
+    } catch(NumberFormatException ex) {
+
+        JOptionPane.showMessageDialog(
+                this,
+                "Price must be a number."
+        );
+    }
+});
 
         add(scrollPane, BorderLayout.CENTER);
-        add(btnSave, BorderLayout.SOUTH);
+        JPanel buttonPanel = new JPanel();
+
+        buttonPanel.add(btnAddFood);
+        buttonPanel.add(btnSave);
+
+        add(buttonPanel, BorderLayout.SOUTH);
     }
 
     private void loadData() {
@@ -61,6 +127,13 @@ public class EditMenuFrame extends JFrame {
             });
         }
     }
+    
+    private void reloadTable() {
+
+    model.setRowCount(0);
+
+    loadData();
+}
 
     private void saveChanges() {
 
@@ -72,17 +145,15 @@ public class EditMenuFrame extends JFrame {
 
         for(int i = 0; i < model.getRowCount(); i++) {
 
-            String foodName =
-                    model.getValueAt(i, 0).toString();
+            String newFoodName = model.getValueAt(i, 0).toString();
 
-            int newPrice =
-                    Integer.parseInt(
-                            model.getValueAt(i, 1).toString()
-                    );
+        int newPrice = Integer.parseInt(model.getValueAt(i, 1).toString());
 
-            System.out.println(foodName + " -> " + newPrice);
-
-            parent.updatePrice(foodName, newPrice);
+        parent.updateMenuItem(
+        i,
+        newFoodName,
+        newPrice
+);
         }
 
         JOptionPane.showMessageDialog(
