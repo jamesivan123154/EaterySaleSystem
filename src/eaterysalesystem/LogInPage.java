@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package eaterysalesystem;
 
 import java.awt.Color;
@@ -10,6 +6,7 @@ import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -18,20 +15,19 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.ImageIcon;
 
-/**
- *
- * @author james
- */
 public class LogInPage extends JFrame {
 
     private JLabel lblHeader, lblAdmin, lblPassword, lblGuide;
     private JButton btnContinue;
     private JTextField txtAdmin;
     private JPasswordField txtPassword;
-    private static final String userID   = "admin";
+    private JComboBox<String> cmbRole;
+
+    private static final String userID = "admin";
     private static final String password = "123";
 
     LogInPage() {
+
         setSize(600, 600);
         setLayout(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -62,37 +58,62 @@ public class LogInPage extends JFrame {
         lblPassword.setFont(new Font("Arial", Font.PLAIN, 12));
         add(lblPassword);
 
-        // JPasswordField to hide password characters
         txtPassword = new JPasswordField();
         txtPassword.setBounds(280, 240, 100, 25);
         add(txtPassword);
 
+        // Role dropdown
+        cmbRole = new JComboBox<>(new String[]{
+            "Log in as Owner",
+            "Log in as Staff"
+        });
+        cmbRole.setBounds(220, 280, 160, 30);
+		cmbRole.setBackground(Color.WHITE);
+		cmbRole.setForeground(new Color(128, 0, 0)); 
+		cmbRole.setFocusable(false);
+        add(cmbRole);
+
+        // Continue button
         btnContinue = new JButton("Continue");
-        btnContinue.setBounds(240, 280, 100, 30);
+        btnContinue.setBounds(240, 320, 100, 30);
         btnContinue.setFont(new Font("Arial", Font.PLAIN, 12));
         btnContinue.setBackground(new Color(128, 0, 0));
         btnContinue.setForeground(Color.WHITE);
         add(btnContinue);
 
-        // ── Login action listener ──
         btnContinue.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String enteredID   = txtAdmin.getText().trim();
+
+                String enteredID = txtAdmin.getText().trim();
                 String enteredPass = new String(txtPassword.getPassword()).trim();
+                String selectedRole = (String) cmbRole.getSelectedItem();
 
                 if (enteredID.equals(userID) && enteredPass.equals(password)) {
-                    // Credentials correct — open landing page
-                    EaterySalesSystemLandingPage landingPage = new EaterySalesSystemLandingPage();
-                    landingPage.setVisible(true);
-                    dispose(); // close login window
+
+					String role;
+
+					if (selectedRole.equals("Log in as Owner")) {
+						role = "Owner";
+					} else {
+						role = "Staff";
+					}
+
+					EaterySalesSystemLandingPage landingPage =
+							new EaterySalesSystemLandingPage(role);
+
+					landingPage.setVisible(true);
+					dispose();
+
                 } else {
+
                     JOptionPane.showMessageDialog(
-                        null,
-                        "Invalid Admin ID or Password. Please try again.",
-                        "Login Failed",
-                        JOptionPane.ERROR_MESSAGE
+                            null,
+                            "Invalid Admin ID or Password. Please try again.",
+                            "Login Failed",
+                            JOptionPane.ERROR_MESSAGE
                     );
+
                     txtAdmin.setText("");
                     txtPassword.setText("");
                 }
@@ -101,15 +122,22 @@ public class LogInPage extends JFrame {
 
         // Logo
         try {
-            ImageIcon icon    = new ImageIcon(getClass().getResource("/eaterysalesystem/logo.png"));
-            Image img         = icon.getImage();
-            Image resized     = img.getScaledInstance(120, 120, Image.SCALE_SMOOTH);
+
+            ImageIcon icon = new ImageIcon(
+                    getClass().getResource("/eaterysalesystem/logo.png"));
+
+            Image img = icon.getImage();
+            Image resized = img.getScaledInstance(
+                    120, 120, Image.SCALE_SMOOTH);
+
             ImageIcon resizedIcon = new ImageIcon(resized);
-            JLabel lblLogo    = new JLabel(resizedIcon);
+
+            JLabel lblLogo = new JLabel(resizedIcon);
             lblLogo.setBounds(240, 20, 120, 120);
             add(lblLogo);
+
         } catch (Exception ex) {
-            // Logo not found — skip silently
+            // Logo not found
         }
     }
 }

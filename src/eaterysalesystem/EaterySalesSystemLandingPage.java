@@ -102,12 +102,15 @@ public class EaterySalesSystemLandingPage extends JFrame {
     private JPanel    pnlOrderList;
     private JLabel    lblTotal;
     private JButton[] catButtons;
+	private String role;
 
     // ─────────────────────────────────────────────────────────────
-    EaterySalesSystemLandingPage() {
-        buildPriceLookup();
-        initUI();
-    }
+    EaterySalesSystemLandingPage(String role) {
+    this.role = role;
+
+    buildPriceLookup();
+    initUI();
+}
 
     // ── Build price map for quick lookup ──
     private void buildPriceLookup() {
@@ -225,10 +228,18 @@ hdr.add(rightPanel, BorderLayout.EAST);
     btnOrders.addActionListener(e -> {
     new OrderHistoryFrame().setVisible(true);
     });
+	
+	btnSales.addActionListener(e -> {
+    this.setVisible(false); 
+    new SalesReportFrame(this.role, this); 
+	});
 
-    buttonPanel.add(btnEditMenu);
     buttonPanel.add(btnOrders);
-    buttonPanel.add(btnSales);
+
+	if (role.equals("Owner")) {
+		buttonPanel.add(btnEditMenu);
+		buttonPanel.add(btnSales);
+	}
 
     topRow.add(buttonPanel, BorderLayout.EAST);
 
