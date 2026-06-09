@@ -113,12 +113,38 @@ public class EaterySalesSystemLandingPage extends JFrame {
 }
 
     // ── Build price map for quick lookup ──
-    private void buildPriceLookup() {
-
+    public void buildPriceLookup() {
     priceMap.clear();
 
-    for (String[] row : POPULAR_ITEMS)priceMap.put(row[0], Integer.parseInt(row[1]));
-    for (String[] row : NICHE_ITEMS)priceMap.put(row[0], Integer.parseInt(row[1]));
+    // try loading from DB first
+    try {
+        Connection conn = DriverManager.getConnection(
+            "jdbc:postgresql://localhost:5432/eaterydb", "postgres", "admin123"
+        );
+        String sql = "SELECT item_name, price FROM menu_item";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        ResultSet rs = pst.executeQuery();
+
+        while (rs.next()) {
+            priceMap.put(
+                rs.getString("item_name"),
+                (int) rs.getDouble("price")
+            );
+        }
+
+        rs.close();
+        pst.close();
+        conn.close();
+
+    } catch (SQLException ex) {
+        // fallback to static arrays if DB fails
+        JOptionPane.showMessageDialog(this,
+            "Price lookup fallback to static data: " + ex.getMessage(),
+            "Warning", JOptionPane.WARNING_MESSAGE
+        );
+        for (String[] row : POPULAR_ITEMS) priceMap.put(row[0], Integer.parseInt(row[1]));
+        for (String[] row : NICHE_ITEMS)   priceMap.put(row[0], Integer.parseInt(row[1]));
+    }
 }
 
     // ── Initialize main UI ──
@@ -317,26 +343,32 @@ greet.add(subPanel);
         refreshItemsGrid();
     }
 
-    private void refreshItemsGrid() {
-        pnlItems.removeAll();
-        ArrayList<String[]> items = (selectedCategory == 0) ? POPULAR_ITEMS : NICHE_ITEMS;
+    public void refreshItemsGrid() {
+    pnlItems.removeAll();
 
-        pnlItems.setLayout(new GridLayout(0, 3, 10, 10));
-        pnlItems.setBorder(new EmptyBorder(10, 16, 10, 10));
+    ArrayList<String[]> items = loadItemsFromDB(selectedCategory == 0 ? "Popular" : "Niche");
 
-        for (String[] item : items) {
-            pnlItems.add(buildItemCard(item[0], item[1]));
-        }
-
-        int totalItems = items.size();
-        int columns = 3;
-        int rows = (int) Math.ceil((double) totalItems / columns);
-        int panelHeight = (rows * 140) + ((rows - 1) * 10) + 24;
-        pnlItems.setPreferredSize(new Dimension(580, panelHeight));
-
-        pnlItems.revalidate();
-        pnlItems.repaint();
+    // fallback to static arrays if DB returns nothing
+    if (items.isEmpty()) {
+        items = (selectedCategory == 0) ? POPULAR_ITEMS : NICHE_ITEMS;
     }
+
+    pnlItems.setLayout(new GridLayout(0, 3, 10, 10));
+    pnlItems.setBorder(new EmptyBorder(10, 16, 10, 10));
+
+    for (String[] item : items) {
+        pnlItems.add(buildItemCard(item[0], item[1]));
+    }
+
+    int totalItems = items.size();
+    int columns = 3;
+    int rows = (int) Math.ceil((double) totalItems / columns);
+    int panelHeight = (rows * 140) + ((rows - 1) * 10) + 24;
+    pnlItems.setPreferredSize(new Dimension(580, panelHeight));
+
+    pnlItems.revalidate();
+    pnlItems.repaint();
+}
 
     private JPanel buildItemCard(String name, String price) {
         JPanel card = new JPanel();
@@ -538,7 +570,7 @@ try {
         "admin123"
     );
 
-    String sql = "INSERT INTO orders(customer_name, total_amount) VALUES (?, ?)";
+    String sql = "INSERT INTO orders_temporary(customer_name, total_amount) VALUES (?, ?)";
 
     PreparedStatement pst = conn.prepareStatement(sql);
     pst.setString(1, customerName);
@@ -681,6 +713,34 @@ try {
 
     buildPriceLookup();
     refreshItemsGrid();
+}
+    
+    private ArrayList<String[]> loadItemsFromDB(String category) {
+    ArrayList<String[]> items = new ArrayList<>();
+    try {
+        Connection conn = DriverManager.getConnection(
+            "jdbc:postgresql://localhost:5432/eaterydb", "postgres", "admin123"
+        );
+        String sql = "SELECT item_name, price FROM menu_item WHERE category = ? ORDER BY item_id";
+        PreparedStatement pst = conn.prepareStatement(sql);
+        pst.setString(1, category);
+        ResultSet rs = pst.executeQuery();
+        while (rs.next()) {
+            items.add(new String[]{
+                rs.getString("item_name"),
+                String.valueOf((int) rs.getDouble("price"))
+            });
+        }
+        rs.close();
+        pst.close();
+        conn.close();
+    } catch (SQLException ex) {
+        JOptionPane.showMessageDialog(this,
+            "Failed to load menu: " + ex.getMessage(),
+            "Database Error", JOptionPane.ERROR_MESSAGE
+        );
+    }
+    return items;
 }
 
     // ─────────────────────────────────────────────────────────────

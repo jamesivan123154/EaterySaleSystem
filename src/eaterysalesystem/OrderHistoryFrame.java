@@ -141,7 +141,7 @@ public class OrderHistoryFrame extends JFrame {
 
         String sql =
                 "SELECT order_id, customer_name, total_amount, order_date "
-                + "FROM orders "
+                + "FROM orders_temporary "
                 + "ORDER BY order_date DESC";
 
         try (
@@ -204,7 +204,7 @@ public class OrderHistoryFrame extends JFrame {
         }
 
         String sql =
-                "DELETE FROM orders WHERE order_id = ?";
+                "DELETE FROM orders_temporary WHERE order_id = ?";
 
         try (
                 Connection conn = getConnection();
