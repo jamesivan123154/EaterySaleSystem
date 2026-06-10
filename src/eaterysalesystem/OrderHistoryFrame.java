@@ -1,15 +1,4 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package eaterysalesystem;
-
-/**
- *
- * @author james
- */
-
-
 
 import java.awt.*;
 import java.sql.*;
@@ -24,18 +13,14 @@ public class OrderHistoryFrame extends JFrame {
     private static final Color BG_CARD       = new Color(255, 255, 255);
     private static final Color COLOR_PRIMARY = new Color(128, 0, 0);
     private static final Color COLOR_ACCENT  = new Color(255, 193, 7);
-    private static final Color COLOR_TEXT    = new Color(30, 30, 30);
 
     private JTable table;
     private DefaultTableModel model;
 
     // PostgreSQL Configuration
-    private static final String DB_URL =
-            "jdbc:postgresql://localhost:5432/eaterydb";
-    private static final String DB_USER =
-            "postgres";
-    private static final String DB_PASSWORD =
-            "admin123";
+    private static final String DB_URL      = "jdbc:postgresql://localhost:5432/eaterydb";
+    private static final String DB_USER     = "postgres";
+    private static final String DB_PASSWORD = "admin123";
 
     public OrderHistoryFrame() {
         initializeUI();
@@ -45,7 +30,7 @@ public class OrderHistoryFrame extends JFrame {
     private void initializeUI() {
 
         setTitle("Order History");
-        setSize(700, 500);
+        setSize(750, 500);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout());
@@ -58,20 +43,19 @@ public class OrderHistoryFrame extends JFrame {
         JLabel lblTitle = new JLabel("Order History");
         lblTitle.setForeground(Color.WHITE);
         lblTitle.setFont(new Font("Arial", Font.BOLD, 24));
-
         headerPanel.add(lblTitle, BorderLayout.WEST);
 
         add(headerPanel, BorderLayout.NORTH);
 
-        // Table
+        // Table — now includes Facilitator Name
         model = new DefaultTableModel(
                 new String[]{
                     "Order ID",
                     "Customer Name",
+                    "Facilitator Name",
                     "Total Amount",
                     "Order Date"
                 }, 0) {
-
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -79,7 +63,6 @@ public class OrderHistoryFrame extends JFrame {
         };
 
         table = new JTable(model);
-
         table.setRowHeight(28);
         table.setFont(new Font("Arial", Font.PLAIN, 13));
         table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 13));
@@ -101,8 +84,8 @@ public class OrderHistoryFrame extends JFrame {
         buttonPanel.setBackground(BG_MAIN);
 
         JButton btnRefresh = new JButton("Refresh");
-        JButton btnDelete = new JButton("Delete Selected Transaction");
-        JButton btnClose = new JButton("Close");
+        JButton btnDelete  = new JButton("Delete Selected Transaction");
+        JButton btnClose   = new JButton("Close");
 
         btnRefresh.setBackground(COLOR_ACCENT);
         btnDelete.setBackground(COLOR_PRIMARY);
@@ -114,9 +97,7 @@ public class OrderHistoryFrame extends JFrame {
         btnClose.setFocusPainted(false);
 
         btnRefresh.addActionListener(e -> loadOrders());
-
         btnDelete.addActionListener(e -> deleteSelectedOrder());
-
         btnClose.addActionListener(e -> dispose());
 
         buttonPanel.add(btnRefresh);
@@ -127,114 +108,107 @@ public class OrderHistoryFrame extends JFrame {
     }
 
     private Connection getConnection() throws SQLException {
-
-        return DriverManager.getConnection(
-                DB_URL,
-                DB_USER,
-                DB_PASSWORD
-        );
+        return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
     }
 
     private void loadOrders() {
 
         model.setRowCount(0);
 
+        // JOIN orders + facilitator to get fullName
         String sql =
-                "SELECT order_id, customer_name, total_amount, order_date "
-                + "FROM orders_temporary "
-                + "ORDER BY order_date DESC";
+                "SELECT o.order_id, o.customer_name, f.fullName, " +
+                "o.total_amount, o.order_date " +
+                "FROM orders o " +
+                "JOIN facilitator f ON o.facilitator_id = f.facilitator_id " +
+                "ORDER BY o.order_date DESC";
 
         try (
-                Connection conn = getConnection();
-                PreparedStatement pst = conn.prepareStatement(sql);
-                ResultSet rs = pst.executeQuery()
+            Connection conn = getConnection();
+            PreparedStatement pst = conn.prepareStatement(sql);
+            ResultSet rs = pst.executeQuery()
         ) {
-
             while (rs.next()) {
-
                 model.addRow(new Object[]{
                     rs.getInt("order_id"),
                     rs.getString("customer_name"),
+                    rs.getString("fullName"),
                     rs.getDouble("total_amount"),
                     rs.getTimestamp("order_date")
                 });
             }
 
         } catch (SQLException ex) {
-
             JOptionPane.showMessageDialog(
-                    this,
-                    "Error loading order history:\n" + ex.getMessage(),
-                    "Database Error",
-                    JOptionPane.ERROR_MESSAGE
+                this,
+                "Error loading order history:\n" + ex.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE
             );
         }
     }
 
     private void deleteSelectedOrder() {
 
-        int selectedRow = table.getSelectedRow();
+    int selectedRow = table.getSelectedRow();
 
-        if (selectedRow == -1) {
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Please select a transaction first.",
-                    "No Selection",
-                    JOptionPane.WARNING_MESSAGE
-            );
-            return;
-        }
-
-        int orderId =
-                Integer.parseInt(
-                        model.getValueAt(selectedRow, 0).toString()
-                );
-
-        int confirm = JOptionPane.showConfirmDialog(
-                this,
-                "Delete transaction #" + orderId + "?",
-                "Confirm Deletion",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE
+    if (selectedRow == -1) {
+        JOptionPane.showMessageDialog(
+            this,
+            "Please select a transaction first.",
+            "No Selection",
+            JOptionPane.WARNING_MESSAGE
         );
+        return;
+    }
 
-        if (confirm != JOptionPane.YES_OPTION) {
-            return;
-        }
+    int orderId = Integer.parseInt(
+            model.getValueAt(selectedRow, 0).toString()
+    );
 
-        String sql =
-                "DELETE FROM orders_temporary WHERE order_id = ?";
+    int confirm = JOptionPane.showConfirmDialog(
+            this,
+            "Delete transaction #" + orderId + "?",
+            "Confirm Deletion",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+    );
 
-        try (
-                Connection conn = getConnection();
-                PreparedStatement pst = conn.prepareStatement(sql)
-        ) {
+    if (confirm != JOptionPane.YES_OPTION) {
+        return;
+    }
 
-            pst.setInt(1, orderId);
+    try (Connection conn = getConnection()) {
 
-            int rowsAffected = pst.executeUpdate();
+        // Step 1: Delete order_items first
+        String deleteItems = "DELETE FROM order_item WHERE order_id = ?";
+        PreparedStatement pstItems = conn.prepareStatement(deleteItems);
+        pstItems.setInt(1, orderId);
+        pstItems.executeUpdate();
+        pstItems.close();
 
-            if (rowsAffected > 0) {
+        // Step 2: Delete the order
+        String deleteOrder = "DELETE FROM orders WHERE order_id = ?";
+        PreparedStatement pstOrder = conn.prepareStatement(deleteOrder);
+        pstOrder.setInt(1, orderId);
+        int rowsAffected = pstOrder.executeUpdate();
+        pstOrder.close();
 
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Transaction deleted successfully."
-                );
-
-                loadOrders();
-            }
-
-        } catch (SQLException ex) {
-
+        if (rowsAffected > 0) {
             JOptionPane.showMessageDialog(
-                    this,
-                    "Error deleting transaction:\n" + ex.getMessage(),
-                    "Database Error",
-                    JOptionPane.ERROR_MESSAGE
+                this,
+                "Transaction deleted successfully."
             );
+            loadOrders();
         }
+
+    } catch (SQLException ex) {
+        JOptionPane.showMessageDialog(
+            this,
+            "Error deleting transaction:\n" + ex.getMessage(),
+            "Database Error",
+            JOptionPane.ERROR_MESSAGE
+        );
     }
 }
-
-
+}

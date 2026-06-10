@@ -1,9 +1,4 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package eaterysalesystem;
-
 
 import java.awt.*;
 import java.awt.event.*;
@@ -12,21 +7,17 @@ import javax.swing.*;
 import javax.swing.border.*;
 import java.sql.*;
 
-/**
- *
- * @author Mark Samia
- */
 public class EaterySalesSystemLandingPage extends JFrame {
 
-    // ── Colors (matching LogInPage theme exactly) ──
-    private static final Color BG_MAIN       = new Color(204, 229, 255); // Light blue canvas
-    private static final Color BG_SIDEBAR    = new Color(255, 255, 255); // White sidebar
-    private static final Color COLOR_PRIMARY = new Color(128, 0, 0);     // Deep red
-    private static final Color COLOR_ACCENT  = new Color(255, 193, 7);   // Golden yellow
-    private static final Color COLOR_CARD    = new Color(255, 255, 255); // White item cards
-    private static final Color COLOR_TEXT    = new Color(30, 30, 30);    // Dark text
-    private static final Color COLOR_MUTED   = new Color(100, 110, 130); // Blue-gray muted labels
-    private static final Color COLOR_BORDER  = new Color(180, 210, 240); // Soft blue border
+    // ── Colors ──
+    private static final Color BG_MAIN       = new Color(204, 229, 255);
+    private static final Color BG_SIDEBAR    = new Color(255, 255, 255);
+    private static final Color COLOR_PRIMARY = new Color(128, 0, 0);
+    private static final Color COLOR_ACCENT  = new Color(255, 193, 7);
+    private static final Color COLOR_CARD    = new Color(255, 255, 255);
+    private static final Color COLOR_TEXT    = new Color(30, 30, 30);
+    private static final Color COLOR_MUTED   = new Color(100, 110, 130);
+    private static final Color COLOR_BORDER  = new Color(180, 210, 240);
 
     // ── Fonts ──
     private static final Font FONT_TITLE = new Font("Arial", Font.BOLD,  20);
@@ -69,88 +60,83 @@ public class EaterySalesSystemLandingPage extends JFrame {
         ));
 
     public static final ArrayList<String[]> NICHE_ITEMS =
-                new ArrayList<>(Arrays.asList(
-                new String[]{"Dinuguan",         "80"},
-                new String[]{"Papaitan",         "85"},
-                new String[]{"Bopis",            "75"},
-                new String[]{"Pinakbet",         "70"},
-                new String[]{"Ginisang Monggo",  "60"},
-                new String[]{"Laing",            "75"},
-                new String[]{"Kare-Kare",        "130"},
-                new String[]{"Kinilaw",          "90"},
-                new String[]{"Ginataang Langka", "65"},
-                new String[]{"Adobong Pusit",    "95"},
-                new String[]{"Ginataang Tulinan","85"},
-                new String[]{"Ginataang Suso",   "70"},
-                new String[]{"Paksiw na Bangus", "65"},
-                new String[]{"Sinanglay",        "80"},
-                new String[]{"KBL",              "95"},
-                new String[]{"Adobong Atay",     "70"},
-                new String[]{"Paksiw na Pata",   "105"},
-                new String[]{"Balbacua",         "120"},
-                new String[]{"Ginataang Santol", "75"},
-                new String[]{"Adobong Kamansi",  "80"}
+        new ArrayList<>(Arrays.asList(
+                new String[]{"Dinuguan",          "80"},
+                new String[]{"Papaitan",          "85"},
+                new String[]{"Bopis",             "75"},
+                new String[]{"Pinakbet",          "70"},
+                new String[]{"Ginisang Monggo",   "60"},
+                new String[]{"Laing",             "75"},
+                new String[]{"Kare-Kare",         "130"},
+                new String[]{"Kinilaw",           "90"},
+                new String[]{"Ginataang Langka",  "65"},
+                new String[]{"Adobong Pusit",     "95"},
+                new String[]{"Ginataang Tulinan", "85"},
+                new String[]{"Ginataang Suso",    "70"},
+                new String[]{"Paksiw na Bangus",  "65"},
+                new String[]{"Sinanglay",         "80"},
+                new String[]{"KBL",               "95"},
+                new String[]{"Adobong Atay",      "70"},
+                new String[]{"Paksiw na Pata",    "105"},
+                new String[]{"Balbacua",          "120"},
+                new String[]{"Ginataang Santol",  "75"},
+                new String[]{"Adobong Kamansi",   "80"}
         ));
 
-    // ── State Management ──
+    // ── State ──
     private int selectedCategory = 0;
-    private final Map<String, Integer> orderMap = new LinkedHashMap<>();
-    private final Map<String, Integer> priceMap = new HashMap<>();
+    private final Map<String, Integer> orderMap  = new LinkedHashMap<>();
+    private final Map<String, Integer> priceMap  = new HashMap<>();
 
     // ── UI References ──
     private JPanel    pnlItems;
     private JPanel    pnlOrderList;
     private JLabel    lblTotal;
     private JButton[] catButtons;
-	private String role;
+    private String    role;
+    private int       facilitatorId; // NEW
 
-    // ─────────────────────────────────────────────────────────────
-    EaterySalesSystemLandingPage(String role) {
-    this.role = role;
-
-    buildPriceLookup();
-    initUI();
-}
-
-    // ── Build price map for quick lookup ──
-    public void buildPriceLookup() {
-    priceMap.clear();
-
-    // try loading from DB first
-    try {
-        Connection conn = DriverManager.getConnection(
-            "jdbc:postgresql://localhost:5432/eaterydb", "postgres", "admin123"
-        );
-        String sql = "SELECT item_name, price FROM menu_item";
-        PreparedStatement pst = conn.prepareStatement(sql);
-        ResultSet rs = pst.executeQuery();
-
-        while (rs.next()) {
-            priceMap.put(
-                rs.getString("item_name"),
-                (int) rs.getDouble("price")
-            );
-        }
-
-        rs.close();
-        pst.close();
-        conn.close();
-
-    } catch (SQLException ex) {
-        // fallback to static arrays if DB fails
-        JOptionPane.showMessageDialog(this,
-            "Price lookup fallback to static data: " + ex.getMessage(),
-            "Warning", JOptionPane.WARNING_MESSAGE
-        );
-        for (String[] row : POPULAR_ITEMS) priceMap.put(row[0], Integer.parseInt(row[1]));
-        for (String[] row : NICHE_ITEMS)   priceMap.put(row[0], Integer.parseInt(row[1]));
+    // ── Constructor ──
+    EaterySalesSystemLandingPage(String role, int facilitatorId) {
+        this.role          = role;
+        this.facilitatorId = facilitatorId; // NEW
+        buildPriceLookup();
+        initUI();
     }
-}
 
-    // ── Initialize main UI ──
+    // ── Build price map ──
+    public void buildPriceLookup() {
+        priceMap.clear();
+        try {
+            Connection conn = DriverManager.getConnection(
+                "jdbc:postgresql://localhost:5432/eaterydb", "postgres", "admin123"
+            );
+            String sql = "SELECT item_name, price FROM menu_item";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            ResultSet rs = pst.executeQuery();
+            while (rs.next()) {
+                priceMap.put(
+                    rs.getString("item_name"),
+                    (int) rs.getDouble("price")
+                );
+            }
+            rs.close();
+            pst.close();
+            conn.close();
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this,
+                "Price lookup fallback to static data: " + ex.getMessage(),
+                "Warning", JOptionPane.WARNING_MESSAGE
+            );
+            for (String[] row : POPULAR_ITEMS) priceMap.put(row[0], Integer.parseInt(row[1]));
+            for (String[] row : NICHE_ITEMS)   priceMap.put(row[0], Integer.parseInt(row[1]));
+        }
+    }
+
+    // ── Initialize UI ──
     private void initUI() {
         setTitle("Jomar's Eatery – Kiosk");
-        setSize(860, 640); 
+        setSize(860, 640);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
@@ -161,9 +147,7 @@ public class EaterySalesSystemLandingPage extends JFrame {
         add(buildSidebar(), BorderLayout.EAST);
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // HEADER
-    // ─────────────────────────────────────────────────────────────
+    // ── Header ──
     private JPanel buildHeader() {
         JPanel hdr = new JPanel(new BorderLayout());
         hdr.setBackground(COLOR_PRIMARY);
@@ -175,40 +159,31 @@ public class EaterySalesSystemLandingPage extends JFrame {
         logo.setForeground(Color.WHITE);
         hdr.add(logo, BorderLayout.WEST);
 
-        hdr.add(logo, BorderLayout.WEST);
+        JButton btnLogout = new JButton("Logout");
+        btnLogout.setBackground(COLOR_ACCENT);
+        btnLogout.setForeground(Color.BLACK);
+        btnLogout.setFocusPainted(false);
+        btnLogout.addActionListener(e -> {
+            dispose();
+            new LogInPage().setVisible(true);
+        });
 
-JButton btnLogout = new JButton("Logout");
-btnLogout.setBackground(COLOR_ACCENT);
-btnLogout.setForeground(Color.BLACK);
-btnLogout.setFocusPainted(false);
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        rightPanel.setOpaque(false);
 
-btnLogout.addActionListener(e -> {
-    dispose(); // closes current frame
+        JLabel tagline = new JLabel("Lutong Bahay, Presyong Mababa | Order Here");
+        tagline.setFont(FONT_BODY);
+        tagline.setForeground(new Color(255, 220, 220));
 
-    // open login page again
-    new LogInPage().setVisible(true);
-});
-
-JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-rightPanel.setOpaque(false);
-
-JLabel tagline = new JLabel("Lutong Bahay, Presyong Mababa | Order Here");
-tagline.setFont(FONT_BODY);
-tagline.setForeground(new Color(255, 220, 220));
-
-btnLogout.setPreferredSize(new Dimension(110, 32));
-
-rightPanel.add(tagline);
-rightPanel.add(btnLogout);
-
-hdr.add(rightPanel, BorderLayout.EAST);
+        btnLogout.setPreferredSize(new Dimension(110, 32));
+        rightPanel.add(tagline);
+        rightPanel.add(btnLogout);
+        hdr.add(rightPanel, BorderLayout.EAST);
 
         return hdr;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // CENTER (greeting + category tabs + items grid)
-    // ─────────────────────────────────────────────────────────────
+    // ── Center ──
     private JPanel buildCenter() {
         JPanel center = new JPanel(new BorderLayout());
         center.setBackground(BG_MAIN);
@@ -218,93 +193,85 @@ hdr.add(rightPanel, BorderLayout.EAST);
     }
 
     private JPanel buildGreeting() {
-    JPanel greet = new JPanel();
-    greet.setBackground(BG_MAIN);
-    greet.setLayout(new BoxLayout(greet, BoxLayout.Y_AXIS));
-    greet.setBorder(new EmptyBorder(14, 20, 6, 20));
+        JPanel greet = new JPanel();
+        greet.setBackground(BG_MAIN);
+        greet.setLayout(new BoxLayout(greet, BoxLayout.Y_AXIS));
+        greet.setBorder(new EmptyBorder(14, 20, 6, 20));
 
-    JPanel topRow = new JPanel(new BorderLayout());
-    topRow.setBackground(BG_MAIN);
+        JPanel topRow = new JPanel(new BorderLayout());
+        topRow.setBackground(BG_MAIN);
 
-    JLabel hi = new JLabel("Kumain na,");
-    hi.setFont(new Font("Arial", Font.BOLD, 22));
-    hi.setForeground(COLOR_TEXT);
+        JLabel hi = new JLabel("Kumain na,");
+        hi.setFont(new Font("Arial", Font.BOLD, 22));
+        hi.setForeground(COLOR_TEXT);
+        topRow.add(hi, BorderLayout.WEST);
 
-    topRow.add(hi, BorderLayout.WEST);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setOpaque(false);
 
-    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-    buttonPanel.setOpaque(false);
+        JButton btnEditMenu = new JButton("Edit Menu");
+        JButton btnOrders   = new JButton("Order History");
+        JButton btnSales    = new JButton("Sales Report");
+        JButton btnStaff    = new JButton("Staff Manager");
 
-    JButton btnEditMenu = new JButton("Edit Menu");
-    JButton btnOrders = new JButton("Order History");
-    JButton btnSales = new JButton("Sales Report");
-	JButton btnStaff = new JButton("Staff Manager");
+        btnEditMenu.setBackground(COLOR_ACCENT);
+        btnOrders.setBackground(COLOR_ACCENT);
+        btnSales.setBackground(COLOR_ACCENT);
+        btnStaff.setBackground(COLOR_ACCENT);
 
-    btnEditMenu.setBackground(COLOR_ACCENT);
-    btnOrders.setBackground(COLOR_ACCENT);
-    btnSales.setBackground(COLOR_ACCENT);
-	btnStaff.setBackground(COLOR_ACCENT);
+        btnEditMenu.setFocusPainted(false);
+        btnOrders.setFocusPainted(false);
+        btnSales.setFocusPainted(false);
+        btnStaff.setFocusPainted(false);
 
-    btnEditMenu.setFocusPainted(false);
-    btnOrders.setFocusPainted(false);
-    btnSales.setFocusPainted(false);
-	btnStaff.setFocusPainted(false);
-	
-	
+        btnEditMenu.addActionListener(e -> new EditMenuFrame(this).setVisible(true));
 
-    btnEditMenu.addActionListener(e -> {
-        new EditMenuFrame(this).setVisible(true);
-    });
-    
-    btnOrders.addActionListener(e -> {
-    new OrderHistoryFrame().setVisible(true);
-    });
-	
-	btnSales.addActionListener(e -> {
-    this.setVisible(false); 
-    new SalesReportFrame(this.role, this); 
-	});
-	
-	btnStaff.addActionListener(e -> {
-    try {
-        new StaffManagerFrame(this.role, this).setVisible(true);
-        this.setVisible(false); 
-    } catch (Exception ex) {
-        ex.printStackTrace();
-        JOptionPane.showMessageDialog(this, "Could not open Staff Manager: " + ex.getMessage());
+        btnOrders.addActionListener(e -> new OrderHistoryFrame().setVisible(true));
+
+        btnSales.addActionListener(e -> {
+            this.setVisible(false);
+            new SalesReportFrame(this.role, this);
+        });
+
+        btnStaff.addActionListener(e -> {
+            try {
+                new StaffManagerFrame(this.role, this).setVisible(true);
+                this.setVisible(false);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this,
+                    "Could not open Staff Manager: " + ex.getMessage());
+            }
+        });
+
+        buttonPanel.add(btnOrders);
+
+        if (role.equals("Owner")) {
+            buttonPanel.add(btnEditMenu);
+            buttonPanel.add(btnSales);
+            buttonPanel.add(btnStaff);
+        }
+
+        topRow.add(buttonPanel, BorderLayout.EAST);
+
+        JLabel sub = new JLabel("anong gusto mo?");
+        sub.setFont(new Font("Arial", Font.PLAIN, 22));
+        sub.setForeground(COLOR_TEXT);
+
+        greet.add(topRow);
+
+        JPanel subPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        subPanel.setBackground(BG_MAIN);
+        subPanel.add(sub);
+        greet.add(subPanel);
+
+        return greet;
     }
-});
-
-    buttonPanel.add(btnOrders);
-
-	if (role.equals("Owner")) {
-		buttonPanel.add(btnEditMenu);
-		buttonPanel.add(btnSales);
-		buttonPanel.add(btnStaff);
-	}
-
-    topRow.add(buttonPanel, BorderLayout.EAST);
-
-    JLabel sub = new JLabel("anong gusto mo?");
-    sub.setFont(new Font("Arial", Font.PLAIN, 22));
-    sub.setForeground(COLOR_TEXT);
-
-    greet.add(topRow);
-
-JPanel subPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-subPanel.setBackground(BG_MAIN);
-subPanel.add(sub);
-
-greet.add(subPanel);
-
-    return greet;
-}
 
     private JPanel buildCategoryBar() {
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setBackground(BG_MAIN);
 
-        // Category tab buttons
         JPanel catBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
         catBar.setBackground(BG_MAIN);
         catBar.setBorder(new EmptyBorder(0, 16, 0, 0));
@@ -325,7 +292,6 @@ greet.add(subPanel);
 
         wrapper.add(catBar, BorderLayout.NORTH);
 
-        // Scrollable items grid
         pnlItems = new JPanel();
         pnlItems.setBackground(BG_MAIN);
         refreshItemsGrid();
@@ -346,7 +312,7 @@ greet.add(subPanel);
             btn.setBackground(COLOR_PRIMARY);
             btn.setForeground(Color.WHITE);
         } else {
-            btn.setBackground(new Color(180, 215, 245)); 
+            btn.setBackground(new Color(180, 215, 245));
             btn.setForeground(COLOR_TEXT);
         }
     }
@@ -360,31 +326,31 @@ greet.add(subPanel);
     }
 
     public void refreshItemsGrid() {
-    pnlItems.removeAll();
+        pnlItems.removeAll();
 
-    ArrayList<String[]> items = loadItemsFromDB(selectedCategory == 0 ? "Popular" : "Niche");
+        ArrayList<String[]> items = loadItemsFromDB(
+                selectedCategory == 0 ? "Popular" : "Niche");
 
-    // fallback to static arrays if DB returns nothing
-    if (items.isEmpty()) {
-        items = (selectedCategory == 0) ? POPULAR_ITEMS : NICHE_ITEMS;
+        if (items.isEmpty()) {
+            items = (selectedCategory == 0) ? POPULAR_ITEMS : NICHE_ITEMS;
+        }
+
+        pnlItems.setLayout(new GridLayout(0, 3, 10, 10));
+        pnlItems.setBorder(new EmptyBorder(10, 16, 10, 10));
+
+        for (String[] item : items) {
+            pnlItems.add(buildItemCard(item[0], item[1]));
+        }
+
+        int totalItems  = items.size();
+        int columns     = 3;
+        int rows        = (int) Math.ceil((double) totalItems / columns);
+        int panelHeight = (rows * 140) + ((rows - 1) * 10) + 24;
+        pnlItems.setPreferredSize(new Dimension(580, panelHeight));
+
+        pnlItems.revalidate();
+        pnlItems.repaint();
     }
-
-    pnlItems.setLayout(new GridLayout(0, 3, 10, 10));
-    pnlItems.setBorder(new EmptyBorder(10, 16, 10, 10));
-
-    for (String[] item : items) {
-        pnlItems.add(buildItemCard(item[0], item[1]));
-    }
-
-    int totalItems = items.size();
-    int columns = 3;
-    int rows = (int) Math.ceil((double) totalItems / columns);
-    int panelHeight = (rows * 140) + ((rows - 1) * 10) + 24;
-    pnlItems.setPreferredSize(new Dimension(580, panelHeight));
-
-    pnlItems.revalidate();
-    pnlItems.repaint();
-}
 
     private JPanel buildItemCard(String name, String price) {
         JPanel card = new JPanel();
@@ -396,27 +362,24 @@ greet.add(subPanel);
         ));
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        // Food emoji
         JLabel emoji = new JLabel(getFoodEmoji(name), SwingConstants.CENTER);
         emoji.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 32));
         emoji.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Item name
-        JLabel lblName = new JLabel("<html><center>" + name + "</center></html>", SwingConstants.CENTER);
+        JLabel lblName = new JLabel(
+                "<html><center>" + name + "</center></html>", SwingConstants.CENTER);
         lblName.setFont(FONT_SUB);
         lblName.setForeground(COLOR_TEXT);
         lblName.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Price
         JLabel lblPrice = new JLabel("P " + price + ".00", SwingConstants.CENTER);
         lblPrice.setFont(FONT_PRICE);
         lblPrice.setForeground(COLOR_PRIMARY);
         lblPrice.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Add button
         JButton btnAdd = new JButton("+ Add");
         btnAdd.setFont(new Font("Arial", Font.BOLD, 10));
-        btnAdd.setBackground(COLOR_PRIMARY); 
+        btnAdd.setBackground(COLOR_PRIMARY);
         btnAdd.setForeground(Color.WHITE);
         btnAdd.setFocusPainted(false);
         btnAdd.setBorder(new EmptyBorder(5, 14, 5, 14));
@@ -425,8 +388,6 @@ greet.add(subPanel);
 
         final String itemName  = name;
         final int    itemPrice = Integer.parseInt(price);
-        
-        // Directly adds the item now without any popup menus
         btnAdd.addActionListener(e -> addToOrder(itemName, itemPrice));
 
         card.add(emoji);
@@ -437,7 +398,6 @@ greet.add(subPanel);
         card.add(Box.createVerticalStrut(8));
         card.add(btnAdd);
 
-        // Hover effect
         card.addMouseListener(new MouseAdapter() {
             public void mouseEntered(MouseEvent e) {
                 card.setBackground(new Color(230, 242, 255));
@@ -458,9 +418,7 @@ greet.add(subPanel);
         return card;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // SIDEBAR (order summary)
-    // ─────────────────────────────────────────────────────────────
+    // ── Sidebar ──
     private JPanel buildSidebar() {
         JPanel sidebar = new JPanel(new BorderLayout());
         sidebar.setBackground(BG_SIDEBAR);
@@ -470,7 +428,6 @@ greet.add(subPanel);
             new EmptyBorder(12, 10, 10, 10)
         ));
 
-        // Sidebar title
         JLabel titleOrder = new JLabel("My Order");
         titleOrder.setFont(FONT_TITLE);
         titleOrder.setForeground(COLOR_PRIMARY);
@@ -487,7 +444,6 @@ greet.add(subPanel);
         topPanel.add(Box.createVerticalStrut(10));
         sidebar.add(topPanel, BorderLayout.NORTH);
 
-        // Scrollable order list
         pnlOrderList = new JPanel();
         pnlOrderList.setBackground(BG_SIDEBAR);
         pnlOrderList.setLayout(new BoxLayout(pnlOrderList, BoxLayout.Y_AXIS));
@@ -497,7 +453,6 @@ greet.add(subPanel);
         scrollOrder.getViewport().setBackground(BG_SIDEBAR);
         sidebar.add(scrollOrder, BorderLayout.CENTER);
 
-        // Bottom: total + Done button
         JPanel bottomPanel = new JPanel();
         bottomPanel.setBackground(BG_SIDEBAR);
         bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
@@ -524,7 +479,6 @@ greet.add(subPanel);
         bottomPanel.add(totalRow);
         bottomPanel.add(Box.createVerticalStrut(10));
 
-        // Done button — Connected to checkout processing dialog
         JButton btnDone = new JButton("Done");
         btnDone.setFont(FONT_BTN);
         btnDone.setBackground(COLOR_ACCENT);
@@ -540,9 +494,7 @@ greet.add(subPanel);
         return sidebar;
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // ORDER LOGIC
-    // ─────────────────────────────────────────────────────────────
+    // ── Order Logic ──
     private void addToOrder(String name, int price) {
         orderMap.merge(name, 1, Integer::sum);
         refreshOrderPanel();
@@ -557,55 +509,90 @@ greet.add(subPanel);
 
     private void processCheckout() {
         if (orderMap.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Your order list is empty!", "Empty Order", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                "Your order list is empty!",
+                "Empty Order",
+                JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // Calculate checkout metrics
+        // Calculate total
         int total = orderMap.entrySet().stream()
             .mapToInt(e -> priceMap.getOrDefault(e.getKey(), 0) * e.getValue())
             .sum();
 
-        // Prompt for customer details using JOptionPane input boxes
-        String customerName = JOptionPane.showInputDialog(this, 
-                "Enter Customer Name to finalize transaction:", 
+        // Prompt for customer name
+        String customerName = JOptionPane.showInputDialog(this,
+                "Enter Customer Name to finalize transaction:",
                 "Checkout Summary", JOptionPane.PLAIN_MESSAGE);
 
-        if (customerName == null) return; // Cancel option selected
+        if (customerName == null) return;
         if (customerName.trim().isEmpty()) customerName = "Guest Customer";
 
-        // Display success invoice modal
-        String message = String.format("Thank you, %s!\nTotal Paid: P %d.00\n\nOrder has been sent to the kitchen.", customerName, total);
-        JOptionPane.showMessageDialog(this, message, "Order Successful", JOptionPane.INFORMATION_MESSAGE);
-        
-        // SAVE TO POSTGRESQL DATABASE
-try {
-    Connection conn = DriverManager.getConnection(
-        "jdbc:postgresql://localhost:5432/eaterydb",
-        "postgres",
-        "admin123"
-    );
+        // Show success message
+        String message = String.format(
+                "Thank you, %s!\nTotal Paid: P %d.00\n\nOrder has been sent to the kitchen.",
+                customerName, total);
+        JOptionPane.showMessageDialog(this, message,
+                "Order Successful", JOptionPane.INFORMATION_MESSAGE);
 
-    String sql = "INSERT INTO orders_temporary(customer_name, total_amount) VALUES (?, ?)";
+        // SAVE TO POSTGRESQL
+        try {
+            Connection conn = DriverManager.getConnection(
+                "jdbc:postgresql://localhost:5432/eaterydb",
+                "postgres",
+                "admin123"
+            );
 
-    PreparedStatement pst = conn.prepareStatement(sql);
-    pst.setString(1, customerName);
-    pst.setDouble(2, total);
+            // Step 1: Insert into orders table
+            String orderSql =
+                "INSERT INTO orders (customer_name, total_amount, facilitator_id) " +
+                "VALUES (?, ?, ?) RETURNING order_id";
 
-    pst.executeUpdate();
+            PreparedStatement pst = conn.prepareStatement(orderSql);
+            pst.setString(1, customerName);
+            pst.setDouble(2, total);
+            pst.setInt(3, facilitatorId);
 
-    pst.close();
-    conn.close();
+            ResultSet rs = pst.executeQuery();
+            rs.next();
+            int orderId = rs.getInt("order_id");
 
-} catch (SQLException ex) {
-    JOptionPane.showMessageDialog(this,
-        "Failed to save order:\n" + ex.getMessage(),
-        "Database Error",
-        JOptionPane.ERROR_MESSAGE
-    );
-}
+            // Step 2: Insert each item into order_item table
+            String itemSql =
+                "INSERT INTO order_item (order_id, item_id, quantity, subtotal) " +
+                "VALUES (?, (SELECT item_id FROM menu_item WHERE item_name = ?), ?, ?)";
 
-        // Flush application data buffers back to empty states
+            PreparedStatement pstItem = conn.prepareStatement(itemSql);
+
+            for (Map.Entry<String, Integer> entry : orderMap.entrySet()) {
+                String itemName = entry.getKey();
+                int    qty      = entry.getValue();
+                int    price    = priceMap.getOrDefault(itemName, 0);
+                double subtotal = price * qty;
+
+                pstItem.setInt(1, orderId);
+                pstItem.setString(2, itemName);
+                pstItem.setInt(3, qty);
+                pstItem.setDouble(4, subtotal);
+                pstItem.addBatch();
+            }
+
+            pstItem.executeBatch();
+
+            pstItem.close();
+            pst.close();
+            conn.close();
+
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this,
+                "Failed to save order:\n" + ex.getMessage(),
+                "Database Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
+
+        // Clear order
         orderMap.clear();
         refreshOrderPanel();
     }
@@ -637,7 +624,6 @@ try {
             namePanel.add(lName);
             namePanel.add(lPrice);
 
-            // Quantity controls
             JButton btnMinus = makeQtyBtn("-");
             JLabel  lblQty   = new JLabel(String.valueOf(qty), SwingConstants.CENTER);
             lblQty.setFont(FONT_PRICE);
@@ -673,7 +659,6 @@ try {
         pnlOrderList.revalidate();
         pnlOrderList.repaint();
 
-        // Recalculate total
         int total = orderMap.entrySet().stream()
             .mapToInt(e -> priceMap.getOrDefault(e.getKey(), 0) * e.getValue())
             .sum();
@@ -691,77 +676,61 @@ try {
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return btn;
     }
-    
+
     public void updateMenuItem(int rowIndex, String newFoodName, int newPrice) {
-
-    if(rowIndex < POPULAR_ITEMS.size()){
-
-        POPULAR_ITEMS.get(rowIndex)[0] = newFoodName;
-        POPULAR_ITEMS.get(rowIndex)[1] = String.valueOf(newPrice);
-
-    } else {
-
-        int nicheIndex =
-                rowIndex - POPULAR_ITEMS.size();
-
-        NICHE_ITEMS.get(nicheIndex)[0] = newFoodName;
-        NICHE_ITEMS.get(nicheIndex)[1] = String.valueOf(newPrice);
-    }
-
-    buildPriceLookup();
-
-    refreshItemsGrid();
-    refreshOrderPanel();
-}
-    
-    public void addMenuItem(String category, String foodName, int price) {
-
-    String[] newItem = {
-        foodName,
-        String.valueOf(price)
-    };
-
-    if(category.equals("Popular")) {
-        POPULAR_ITEMS.add(newItem);
-    } else {
-        NICHE_ITEMS.add(newItem);
-    }
-
-    buildPriceLookup();
-    refreshItemsGrid();
-}
-    
-    private ArrayList<String[]> loadItemsFromDB(String category) {
-    ArrayList<String[]> items = new ArrayList<>();
-    try {
-        Connection conn = DriverManager.getConnection(
-            "jdbc:postgresql://localhost:5432/eaterydb", "postgres", "admin123"
-        );
-        String sql = "SELECT item_name, price FROM menu_item WHERE category = ? ORDER BY item_id";
-        PreparedStatement pst = conn.prepareStatement(sql);
-        pst.setString(1, category);
-        ResultSet rs = pst.executeQuery();
-        while (rs.next()) {
-            items.add(new String[]{
-                rs.getString("item_name"),
-                String.valueOf((int) rs.getDouble("price"))
-            });
+        if (rowIndex < POPULAR_ITEMS.size()) {
+            POPULAR_ITEMS.get(rowIndex)[0] = newFoodName;
+            POPULAR_ITEMS.get(rowIndex)[1] = String.valueOf(newPrice);
+        } else {
+            int nicheIndex = rowIndex - POPULAR_ITEMS.size();
+            NICHE_ITEMS.get(nicheIndex)[0] = newFoodName;
+            NICHE_ITEMS.get(nicheIndex)[1] = String.valueOf(newPrice);
         }
-        rs.close();
-        pst.close();
-        conn.close();
-    } catch (SQLException ex) {
-        JOptionPane.showMessageDialog(this,
-            "Failed to load menu: " + ex.getMessage(),
-            "Database Error", JOptionPane.ERROR_MESSAGE
-        );
+        buildPriceLookup();
+        refreshItemsGrid();
+        refreshOrderPanel();
     }
-    return items;
-}
 
-    // ─────────────────────────────────────────────────────────────
-    // FOOD EMOJIS
-    // ─────────────────────────────────────────────────────────────
+    public void addMenuItem(String category, String foodName, int price) {
+        String[] newItem = {foodName, String.valueOf(price)};
+        if (category.equals("Popular")) {
+            POPULAR_ITEMS.add(newItem);
+        } else {
+            NICHE_ITEMS.add(newItem);
+        }
+        buildPriceLookup();
+        refreshItemsGrid();
+    }
+
+    private ArrayList<String[]> loadItemsFromDB(String category) {
+        ArrayList<String[]> items = new ArrayList<>();
+        try {
+            Connection conn = DriverManager.getConnection(
+                "jdbc:postgresql://localhost:5432/eaterydb", "postgres", "admin123"
+            );
+            String sql = "SELECT item_name, price FROM menu_item WHERE category = ? ORDER BY item_id";
+            PreparedStatement pst = conn.prepareStatement(sql);
+            pst.setString(1, category);
+            ResultSet rs = pst.executeQuery();
+            while (rs.next()) {
+                items.add(new String[]{
+                    rs.getString("item_name"),
+                    String.valueOf((int) rs.getDouble("price"))
+                });
+            }
+            rs.close();
+            pst.close();
+            conn.close();
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this,
+                "Failed to load menu: " + ex.getMessage(),
+                "Database Error", JOptionPane.ERROR_MESSAGE
+            );
+        }
+        return items;
+    }
+
+    // ── Food Emojis ──
     private String getFoodEmoji(String name) {
         switch (name) {
             case "Adobo":              return "🍖";

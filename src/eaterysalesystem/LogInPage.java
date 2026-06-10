@@ -117,11 +117,11 @@ public class LogInPage extends JFrame {
     }
 
     private void handleLogin() {
-        String enteredID   = txtFacilitatorID.getText().trim();
-        String enteredPass = new String(txtPassword.getPassword()).trim();
+        String enteredID    = txtFacilitatorID.getText().trim();
+        String enteredPass  = new String(txtPassword.getPassword()).trim();
         String selectedRole = (String) cmbRole.getSelectedItem();
 
-        // Basic validation — fields must not be empty
+        // Basic validation
         if (enteredID.isEmpty() || enteredPass.isEmpty()) {
             JOptionPane.showMessageDialog(
                 this,
@@ -132,7 +132,7 @@ public class LogInPage extends JFrame {
             return;
         }
 
-        // Determine which role to check in the database
+        // Determine role to check
         String roleToCheck;
         if (selectedRole.equals("Continue as Owner")) {
             roleToCheck = "Owner";
@@ -146,14 +146,12 @@ public class LogInPage extends JFrame {
             String sql;
 
             if (roleToCheck.equals("Owner")) {
-                // Owner: must have role = 'Owner' exactly
                 sql = "SELECT * FROM facilitator " +
                       "WHERE facilitator_id = ? " +
                       "AND password = ? " +
                       "AND role = 'Owner' " +
                       "AND isActive = TRUE";
             } else {
-                // Staff: any role can log in as staff (including Owner)
                 sql = "SELECT * FROM facilitator " +
                       "WHERE facilitator_id = ? " +
                       "AND password = ? " +
@@ -167,16 +165,17 @@ public class LogInPage extends JFrame {
             ResultSet rs = pst.executeQuery();
 
             if (rs.next()) {
-                // Login successful — get actual role from DB
-                String actualRole = rs.getString("role");
+                // Get data from DB before closing
+                String actualRole   = rs.getString("role");
+                int facilitatorId   = rs.getInt("facilitator_id"); // NEW
 
                 rs.close();
                 pst.close();
                 conn.close();
 
-                // Open landing page with actual role
+                // Pass both role and facilitatorId to landing page
                 EaterySalesSystemLandingPage landingPage =
-                        new EaterySalesSystemLandingPage(actualRole);
+                        new EaterySalesSystemLandingPage(actualRole, facilitatorId); // UPDATED
                 landingPage.setVisible(true);
                 dispose();
 
