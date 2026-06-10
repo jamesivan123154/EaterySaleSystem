@@ -99,7 +99,7 @@ public class StaffManagerFrame extends JFrame {
 
         btnAdd.addActionListener(e -> addStaff());
         btnEdit.addActionListener(e -> editStaff());
-        btnDelete.addActionListener(e -> toggleDelete());
+        btnDelete.addActionListener(e -> toggleActiveStatus());
         btnClose.addActionListener(e -> { dispose(); parentFrame.setVisible(true); });
 
         btnPanel.add(btnAdd);
@@ -130,29 +130,159 @@ public class StaffManagerFrame extends JFrame {
         }
     }
 
-    private void toggleDelete() {
-        int row = table.getSelectedRow();
-        if (row == -1) {
-            JOptionPane.showMessageDialog(this, "Please select a staff member first.");
-            return;
-        }
-        
-        int id = (int) tableModel.getValueAt(row, 0);
-        boolean newStatus = !(boolean) tableModel.getValueAt(row, 3);
-        
-        String sql = "UPDATE facilitator SET isactive = ? WHERE facilitator_id = ?";
-        
-        try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/eaterydb", "postgres", "admin123");
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setBoolean(1, newStatus);
-            ps.setInt(2, id);
-            ps.executeUpdate();
-            loadStaffData();
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Database Error: " + e.getMessage());
-        }
+    private void toggleActiveStatus() {
+
+		int row = table.getSelectedRow();
+
+		if (row == -1) {
+			JOptionPane.showMessageDialog(this, "Please select a staff member first.");
+			return;
+		}
+
+		int id = (int) tableModel.getValueAt(row, 0);
+		boolean currentStatus = (boolean) tableModel.getValueAt(row, 3);
+		boolean newStatus = !currentStatus;
+
+		try (Connection conn = DriverManager.getConnection(
+				"jdbc:postgresql://localhost:5432/eaterydb",
+				"postgres",
+				"admin123")) {
+
+			String sql = "UPDATE facilitator SET isactive = ? WHERE facilitator_id = ?";
+			PreparedStatement ps = conn.prepareStatement(sql);
+
+			ps.setBoolean(1, newStatus);
+			ps.setInt(2, id);
+
+			ps.executeUpdate();
+
+			loadStaffData();
+
+			JOptionPane.showMessageDialog(this,
+					"Status updated successfully!");
+
+		} catch (SQLException e) {
+			JOptionPane.showMessageDialog(this, "Database Error: " + e.getMessage());
+		}
+	}
+
+    private void addStaff() { 
+
+    JTextField txtName = new JTextField();
+    JTextField txtRole = new JTextField();
+    JPasswordField txtPassword = new JPasswordField();
+    JCheckBox chkActive = new JCheckBox("Active", true);
+
+    Object[] fields = {
+        "Full Name:", txtName,
+        "Role (Owner/Staff):", txtRole,
+        "Password:", txtPassword,
+        chkActive
+    };
+
+    int option = JOptionPane.showConfirmDialog(
+            this,
+            fields,
+            "Add Staff",
+            JOptionPane.OK_CANCEL_OPTION
+    );
+
+		if (option != JOptionPane.OK_OPTION) return;
+
+		String name = txtName.getText().trim();
+		String role = txtRole.getText().trim();
+		String password = new String(txtPassword.getPassword()).trim();
+		boolean isActive = chkActive.isSelected();
+
+		if (name.isEmpty() || role.isEmpty() || password.isEmpty()) {
+			JOptionPane.showMessageDialog(this, "Fields cannot be empty.");
+			return;
+		}
+
+		try (Connection conn = DriverManager.getConnection(
+				"jdbc:postgresql://localhost:5432/eaterydb",
+				"postgres",
+				"admin123")) {
+
+			String sql = "INSERT INTO facilitator (fullName, role, password, isactive) " +
+						 "VALUES (?, ?, ?, ?)";
+
+			PreparedStatement ps = conn.prepareStatement(sql);
+
+			ps.setString(1, name);
+			ps.setString(2, role);
+			ps.setString(3, password);
+			ps.setBoolean(4, isActive);
+
+			ps.executeUpdate();
+
+			JOptionPane.showMessageDialog(this,
+					"Staff added successfully!");
+
+			loadStaffData();
+
+		} catch (SQLException e) {
+			JOptionPane.showMessageDialog(this,
+					"Error: " + e.getMessage());
+		}
+	}
+	private void editStaff() {
+
+    int row = table.getSelectedRow();
+
+    if (row == -1) {
+        JOptionPane.showMessageDialog(this, "Select a staff member first.");
+        return;
     }
 
-    private void addStaff() { /* Implementation needed */ }
-    private void editStaff() { /* Implementation needed */ }
+    int id = (int) tableModel.getValueAt(row, 0);
+    String currentName = tableModel.getValueAt(row, 1).toString();
+    String currentRole = tableModel.getValueAt(row, 2).toString();
+
+    JTextField txtName = new JTextField(currentName);
+    JTextField txtRole = new JTextField(currentRole);
+
+    Object[] fields = {
+        "Full Name:", txtName,
+        "Role:", txtRole
+    };
+
+    int option = JOptionPane.showConfirmDialog(
+            this,
+            fields,
+            "Edit Staff",
+            JOptionPane.OK_CANCEL_OPTION
+    );
+
+    if (option != JOptionPane.OK_OPTION) return;
+
+    String newName = txtName.getText().trim();
+    String newRole = txtRole.getText().trim();
+
+    if (newName.isEmpty() || newRole.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Fields cannot be empty.");
+        return;
+    }
+
+    try (Connection conn = DriverManager.getConnection(
+            "jdbc:postgresql://localhost:5432/eaterydb",
+            "postgres",
+            "admin123")) {
+
+        String sql = "UPDATE facilitator SET fullname = ?, role = ? WHERE facilitator_id = ?";
+        PreparedStatement ps = conn.prepareStatement(sql);
+
+        ps.setString(1, newName);
+        ps.setString(2, newRole);
+        ps.setInt(3, id);
+
+        ps.executeUpdate();
+
+        JOptionPane.showMessageDialog(this, "Staff updated successfully!");
+        loadStaffData();
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+    }
+}
 }
