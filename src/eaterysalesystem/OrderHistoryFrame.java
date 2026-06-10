@@ -22,10 +22,16 @@ public class OrderHistoryFrame extends JFrame {
     private static final String DB_USER     = "postgres";
     private static final String DB_PASSWORD = "admin123";
 
-    public OrderHistoryFrame() {
-        initializeUI();
-        loadOrders();
-    }
+    private int currentFacilitatorId;
+	private String currentRole;
+
+	public OrderHistoryFrame(int facilitatorId, String role) {
+		this.currentFacilitatorId = facilitatorId;
+		this.currentRole = role;
+
+		initializeUI();
+		loadOrders();
+	}
 
     private void initializeUI() {
 
@@ -110,6 +116,22 @@ public class OrderHistoryFrame extends JFrame {
     private Connection getConnection() throws SQLException {
         return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
     }
+	
+	private int getOrderOwnerId(int orderId) {
+		try (Connection conn = getConnection()) {
+			String sql = "SELECT facilitator_id FROM orders WHERE order_id = ?";
+			PreparedStatement pst = conn.prepareStatement(sql);
+			pst.setInt(1, orderId);
+
+			ResultSet rs = pst.executeQuery();
+			if (rs.next()) {
+				return rs.getInt("facilitator_id");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return -1;
+	}
 
     private void loadOrders() {
 
@@ -163,44 +185,56 @@ public class OrderHistoryFrame extends JFrame {
     }
 
     int orderId = Integer.parseInt(
-            model.getValueAt(selectedRow, 0).toString()
+        model.getValueAt(selectedRow, 0).toString()
     );
 
-    int confirm = JOptionPane.showConfirmDialog(
+    int orderOwnerId = getOrderOwnerId(orderId);
+
+    // BLOCK if not owner AND not their own transaction
+    if (!currentRole.equalsIgnoreCase("Owner")
+            && currentFacilitatorId != orderOwnerId) {
+
+        JOptionPane.showMessageDialog(
             this,
-            "Delete transaction #" + orderId + "?",
-            "Confirm Deletion",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.WARNING_MESSAGE
-    );
-
-    if (confirm != JOptionPane.YES_OPTION) {
+            "You can only delete your own transactions.",
+            "Access Denied",
+            JOptionPane.ERROR_MESSAGE
+        );
         return;
     }
 
+    int confirm = JOptionPane.showConfirmDialog(
+        this,
+        "Delete transaction #" + orderId + "?",
+        "Confirm Deletion",
+        JOptionPane.YES_NO_OPTION,
+        JOptionPane.WARNING_MESSAGE
+    );
+
+    if (confirm != JOptionPane.YES_OPTION) return;
+
     try (Connection conn = getConnection()) {
 
-        // Step 1: Delete order_items first
+        // Step 1: delete items
         String deleteItems = "DELETE FROM order_item WHERE order_id = ?";
         PreparedStatement pstItems = conn.prepareStatement(deleteItems);
         pstItems.setInt(1, orderId);
         pstItems.executeUpdate();
-        pstItems.close();
 
-        // Step 2: Delete the order
+        // Step 2: delete order
         String deleteOrder = "DELETE FROM orders WHERE order_id = ?";
         PreparedStatement pstOrder = conn.prepareStatement(deleteOrder);
         pstOrder.setInt(1, orderId);
+
         int rowsAffected = pstOrder.executeUpdate();
-        pstOrder.close();
 
         if (rowsAffected > 0) {
-            JOptionPane.showMessageDialog(
-                this,
-                "Transaction deleted successfully."
-            );
+            JOptionPane.showMessageDialog(this, "Transaction deleted successfully.");
             loadOrders();
         }
+
+        pstItems.close();
+        pstOrder.close();
 
     } catch (SQLException ex) {
         JOptionPane.showMessageDialog(

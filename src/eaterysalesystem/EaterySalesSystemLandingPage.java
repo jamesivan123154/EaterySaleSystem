@@ -226,7 +226,7 @@ public class EaterySalesSystemLandingPage extends JFrame {
 
         btnEditMenu.addActionListener(e -> new EditMenuFrame(this).setVisible(true));
 
-        btnOrders.addActionListener(e -> new OrderHistoryFrame().setVisible(true));
+        btnOrders.addActionListener(e -> new OrderHistoryFrame(facilitatorId, role).setVisible(true));
 
         btnSales.addActionListener(e -> {
             this.setVisible(false);
