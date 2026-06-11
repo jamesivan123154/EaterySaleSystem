@@ -52,7 +52,7 @@ public class StaffManagerFrame extends JFrame {
         add(headerPanel, BorderLayout.NORTH);
 
         // --- Table Setup ---
-        String[] columns = {"ID", "Name", "Role", "Is Active"};
+        String[] columns = {"ID", "Name", "Role", "Active"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public Class<?> getColumnClass(int columnIndex) {
@@ -111,7 +111,9 @@ public class StaffManagerFrame extends JFrame {
 
     private void loadStaffData() {
         tableModel.setRowCount(0);
-        String sql = "SELECT facilitator_id, fullname, role, isactive FROM facilitator";
+        String sql = "SELECT facilitator_id, fullname, role, isactive " +
+					 "FROM facilitator " +
+					 "ORDER BY isactive DESC, facilitator_id ASC";
         
         try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/eaterydb", "postgres", "admin123");
              Statement st = conn.createStatement();
@@ -131,35 +133,32 @@ public class StaffManagerFrame extends JFrame {
     }
 
     private void toggleActiveStatus() {
-
 		int row = table.getSelectedRow();
 
+		// Check if a row is selected BEFORE accessing the model
 		if (row == -1) {
 			JOptionPane.showMessageDialog(this, "Please select a staff member first.");
 			return;
 		}
 
-		int id = (int) tableModel.getValueAt(row, 0);
-		boolean currentStatus = (boolean) tableModel.getValueAt(row, 3);
+		// Convert to model index safely
+		int modelRow = table.convertRowIndexToModel(row);
+
+		// Extract data using the converted index
+		int id = (int) tableModel.getValueAt(modelRow, 0);
+		boolean currentStatus = (boolean) tableModel.getValueAt(modelRow, 3);
 		boolean newStatus = !currentStatus;
 
 		try (Connection conn = DriverManager.getConnection(
-				"jdbc:postgresql://localhost:5432/eaterydb",
-				"postgres",
-				"admin123")) {
-
-			String sql = "UPDATE facilitator SET isactive = ? WHERE facilitator_id = ?";
-			PreparedStatement ps = conn.prepareStatement(sql);
+				"jdbc:postgresql://localhost:5432/eaterydb", "postgres", "admin123");
+			 PreparedStatement ps = conn.prepareStatement("UPDATE facilitator SET isactive = ? WHERE facilitator_id = ?")) {
 
 			ps.setBoolean(1, newStatus);
 			ps.setInt(2, id);
-
 			ps.executeUpdate();
 
 			loadStaffData();
-
-			JOptionPane.showMessageDialog(this,
-					"Status updated successfully!");
+			JOptionPane.showMessageDialog(this, "Status updated successfully!");
 
 		} catch (SQLException e) {
 			JOptionPane.showMessageDialog(this, "Database Error: " + e.getMessage());
@@ -227,62 +226,61 @@ public class StaffManagerFrame extends JFrame {
 		}
 	}
 	private void editStaff() {
+		int row = table.getSelectedRow();
+		if (row == -1) {
+			JOptionPane.showMessageDialog(this, "Select a staff member first.");
+			return;
+		}
 
-    int row = table.getSelectedRow();
+		int modelRow = table.convertRowIndexToModel(row); 
 
-    if (row == -1) {
-        JOptionPane.showMessageDialog(this, "Select a staff member first.");
-        return;
-    }
+		int id = (int) tableModel.getValueAt(modelRow, 0);
+		String currentName = tableModel.getValueAt(modelRow, 1).toString();
+		String currentRole = tableModel.getValueAt(modelRow, 2).toString();
 
-    int id = (int) tableModel.getValueAt(row, 0);
-    String currentName = tableModel.getValueAt(row, 1).toString();
-    String currentRole = tableModel.getValueAt(row, 2).toString();
+		JTextField txtName = new JTextField(currentName);
+		String[] roles = {"Owner", "Staff"};
+		JComboBox<String> cbRole = new JComboBox<>(roles);
+		cbRole.setSelectedItem(currentRole);
+		
+		Object[] fields = {
+			"Full Name:", txtName,
+			"Role:", cbRole
+		};
 
-    JTextField txtName = new JTextField(currentName);
-    JTextField txtRole = new JTextField(currentRole);
+		int option = JOptionPane.showConfirmDialog(
+				this,
+				fields,
+				"Edit Staff",
+				JOptionPane.OK_CANCEL_OPTION
+		);
 
-    Object[] fields = {
-        "Full Name:", txtName,
-        "Role:", txtRole
-    };
+		if (option != JOptionPane.OK_OPTION) return;
 
-    int option = JOptionPane.showConfirmDialog(
-            this,
-            fields,
-            "Edit Staff",
-            JOptionPane.OK_CANCEL_OPTION
-    );
+		String newName = txtName.getText().trim();
+		String newRole = (String) cbRole.getSelectedItem(); // Get from dropdown
 
-    if (option != JOptionPane.OK_OPTION) return;
+		if (newName.isEmpty()) {
+			JOptionPane.showMessageDialog(this, "Name cannot be empty.");
+			return;
+		}
 
-    String newName = txtName.getText().trim();
-    String newRole = txtRole.getText().trim();
+		try (Connection conn = DriverManager.getConnection(
+				"jdbc:postgresql://localhost:5432/eaterydb", "postgres", "admin123");
+			 PreparedStatement ps = conn.prepareStatement(
+					 "UPDATE facilitator SET fullname = ?, role = ? WHERE facilitator_id = ?")) {
 
-    if (newName.isEmpty() || newRole.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Fields cannot be empty.");
-        return;
-    }
+			ps.setString(1, newName);
+			ps.setString(2, newRole);
+			ps.setInt(3, id);
 
-    try (Connection conn = DriverManager.getConnection(
-            "jdbc:postgresql://localhost:5432/eaterydb",
-            "postgres",
-            "admin123")) {
+			ps.executeUpdate();
 
-        String sql = "UPDATE facilitator SET fullname = ?, role = ? WHERE facilitator_id = ?";
-        PreparedStatement ps = conn.prepareStatement(sql);
+			JOptionPane.showMessageDialog(this, "Staff updated successfully!");
+			loadStaffData();
 
-        ps.setString(1, newName);
-        ps.setString(2, newRole);
-        ps.setInt(3, id);
-
-        ps.executeUpdate();
-
-        JOptionPane.showMessageDialog(this, "Staff updated successfully!");
-        loadStaffData();
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
-    }
-}
+		} catch (SQLException e) {
+			JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+		}
+	}
 }

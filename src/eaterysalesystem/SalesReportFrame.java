@@ -102,6 +102,15 @@ public class SalesReportFrame extends JFrame {
         btn.setMaximumSize(new Dimension(180, 45));
         return btn;
     }
+	
+	private void styleTable(JTable table) {
+		table.setRowHeight(28);
+		table.setFont(new Font("Arial", Font.PLAIN, 13));
+		table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 13));
+		table.getTableHeader().setBackground(COLOR_PRIMARY);
+		table.getTableHeader().setForeground(Color.WHITE);
+		table.setGridColor(new Color(230, 230, 230));
+	}
 
     private void updateReportView(String type) {
         switch (type) {
@@ -125,69 +134,123 @@ public class SalesReportFrame extends JFrame {
     }
 
     private void loadAllTotalSales() {
-        pnlDisplay.removeAll();
-        JPanel container = new JPanel();
-        container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
-        container.setBackground(BG_MAIN);
+		pnlDisplay.removeAll();
+		JPanel container = new JPanel();
+		container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
+		container.setBackground(BG_MAIN);
 
-        container.add(createReportSection("Daily Sales Report", "day"));
-        container.add(Box.createVerticalStrut(20));
-        container.add(createReportSection("Weekly Sales Report", "week"));
-        container.add(Box.createVerticalStrut(20));
-        container.add(createReportSection("Monthly Sales Report", "month"));
+		// Params: Title, SQL Interval, Row Limit
+		container.add(createReportSection("Daily Sales (Last 7 Days)", "day", 7));
+		container.add(Box.createVerticalStrut(20));
+		container.add(createReportSection("Weekly Sales (Last 10 Weeks)", "week", 10));
+		container.add(Box.createVerticalStrut(20));
+		container.add(createReportSection("Monthly Sales (Last 12 Months)", "month", 12));
 
-        JScrollPane scroll = new JScrollPane(container);
-        scroll.setBorder(null);
-        scroll.getVerticalScrollBar().setUnitIncrement(16);
-        pnlDisplay.add(scroll, BorderLayout.CENTER);
-        pnlDisplay.revalidate();
-        pnlDisplay.repaint();
-    }
+		JScrollPane scroll = new JScrollPane(container);
+		scroll.setBorder(null);
+		scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+		scroll.getVerticalScrollBar().setUnitIncrement(16);
+		pnlDisplay.add(scroll, BorderLayout.CENTER);
+		pnlDisplay.revalidate();
+		pnlDisplay.repaint();
+	}
 
-    private JPanel createReportSection(String title, String interval) {
-        JPanel section = new JPanel(new BorderLayout());
-        section.setBackground(BG_MAIN);
+    private JPanel createReportSection(String title, String interval, int limit) {
+		JPanel section = new JPanel(new BorderLayout());
+		section.setBackground(BG_MAIN);
+		section.setBorder(new EmptyBorder(0, 10, 0, 10));
 
-        JLabel lblTitle = new JLabel(title);
-        lblTitle.setFont(FONT_TITLE);
-        lblTitle.setBorder(new EmptyBorder(10, 0, 10, 0));
-        section.add(lblTitle, BorderLayout.NORTH);
+		JLabel lblTitle = new JLabel(title);
+		lblTitle.setFont(FONT_TITLE);
+		lblTitle.setBorder(new EmptyBorder(10, 0, 10, 0));
+		section.add(lblTitle, BorderLayout.NORTH);
 
-        // Limit set to 12 for professional long-term performance
-        String sql = "SELECT DATE_TRUNC('" + interval + "', order_date) as period, SUM(total_amount) as revenue " +
-                     "FROM orders GROUP BY period ORDER BY period DESC LIMIT 12";
-        
-        DefaultTableModel model = new DefaultTableModel(new String[]{"Period", "Revenue"}, 0);
-        try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/eaterydb", "postgres", "admin123");
-             Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(sql)) {
-            while(rs.next()) model.addRow(new Object[]{rs.getString("period"), "P " + String.format("%.2f", rs.getDouble("revenue"))});
-        } catch (SQLException e) { JOptionPane.showMessageDialog(this, "DB Error: " + e.getMessage()); }
+		String sql;
+		if (interval.equals("week")) {
+			// Format: 'Start Date - End Date'
+			sql = "SELECT (DATE_TRUNC('week', o.order_date)::DATE) || ' to ' || " +
+				  "(DATE_TRUNC('week', o.order_date)::DATE + INTERVAL '6 days')::DATE as period, " +
+				  "SUM(oi.quantity) as total_qty, SUM(o.total_amount) as revenue " +
+				  "FROM orders o JOIN order_item oi ON o.order_id = oi.order_id " +
+				  "GROUP BY DATE_TRUNC('week', o.order_date) ORDER BY period DESC LIMIT " + limit;
+		} else if (interval.equals("month")) {
+			// Format: 'YYYY-MM'
+			sql = "SELECT TO_CHAR(o.order_date, 'YYYY-MM') as period, " +
+				  "SUM(oi.quantity) as total_qty, SUM(o.total_amount) as revenue " +
+				  "FROM orders o JOIN order_item oi ON o.order_id = oi.order_id " +
+				  "GROUP BY period ORDER BY period DESC LIMIT " + limit;
+		} else {
+			// Default (Daily): 'YYYY-MM-DD'
+			sql = "SELECT TO_CHAR(o.order_date, 'YYYY-MM-DD') as period, " +
+				  "SUM(oi.quantity) as total_qty, SUM(o.total_amount) as revenue " +
+				  "FROM orders o JOIN order_item oi ON o.order_id = oi.order_id " +
+				  "GROUP BY period ORDER BY period DESC LIMIT " + limit;
+		}
 
-        JTable table = new JTable(model);
-        
-        // Auto-adjust height based on row count
-        int tableHeight = (table.getRowCount() * table.getRowHeight()) + table.getTableHeader().getPreferredSize().height;
-        table.setPreferredScrollableViewportSize(new Dimension(750, Math.min(tableHeight, 300)));
+		DefaultTableModel model = new DefaultTableModel(new String[]{"Period", "Quantity Sold", "Total Revenue"}, 0) {
+			@Override
+			public boolean isCellEditable(int row, int column) { return false; }
+		};
 
-        section.add(new JScrollPane(table), BorderLayout.CENTER);
-        return section;
-    }
+		try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/eaterydb", "postgres", "admin123");
+			 Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(sql)) {
+			while(rs.next()) {
+				model.addRow(new Object[]{
+					rs.getString("period"), 
+					rs.getInt("total_qty"), 
+					"P " + String.format("%.2f", rs.getDouble("revenue"))
+				});
+			}
+		} catch (SQLException e) { 
+			JOptionPane.showMessageDialog(this, "DB Error: " + e.getMessage()); 
+		}
 
+		JTable table = new JTable(model);
+		styleTable(table);
+		table.setEnabled(true);
+		
+		
+
+		int tableHeight = (table.getRowCount() * table.getRowHeight()) + table.getTableHeader().getPreferredSize().height;
+		JScrollPane scrollPane = new JScrollPane(table);
+		scrollPane.getViewport().setBackground(Color.WHITE); 
+		table.setPreferredScrollableViewportSize(new Dimension(750, Math.min(tableHeight, 300)));
+
+		section.add(scrollPane, BorderLayout.CENTER);
+
+		return section;
+	}
+	
     private void updateTable(String query, String[] columnNames) {
-        pnlDisplay.removeAll();
-        DefaultTableModel model = new DefaultTableModel(columnNames, 0);
-        try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/eaterydb", "postgres", "admin123");
-             Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
-            while(rs.next()) {
-                Object[] row = new Object[columnNames.length];
-                for(int i = 0; i < columnNames.length; i++) row[i] = rs.getObject(i + 1);
-                model.addRow(row);
-            }
-        } catch (SQLException e) { JOptionPane.showMessageDialog(this, "Data Error: " + e.getMessage()); }
-        
-        JTable table = new JTable(model);
-        pnlDisplay.add(new JScrollPane(table), BorderLayout.CENTER);
-        pnlDisplay.revalidate();
-        pnlDisplay.repaint();
-    }
+		pnlDisplay.removeAll();
+
+		DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+			@Override
+			public boolean isCellEditable(int row, int column) {
+				return false;
+			}
+		};
+
+		try (Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/eaterydb", "postgres", "admin123");
+			 Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(query)) {
+			while(rs.next()) {
+				Object[] row = new Object[columnNames.length];
+				for(int i = 0; i < columnNames.length; i++) row[i] = rs.getObject(i + 1);
+				model.addRow(row);
+			}
+		} catch (SQLException e) { 
+			JOptionPane.showMessageDialog(this, "Data Error: " + e.getMessage()); 
+		}
+
+		JTable table = new JTable(model);
+		styleTable(table);
+		table.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+		JScrollPane scrollPane = new JScrollPane(table);
+		scrollPane.getViewport().setBackground(Color.WHITE);
+		pnlDisplay.add(scrollPane, BorderLayout.CENTER);
+
+		pnlDisplay.revalidate();
+		pnlDisplay.repaint();
+	}
 }
